@@ -73,7 +73,7 @@ class Hostapd(object):
             # any additional options given
             conf += ["{k}={v}".format(k=k, v=v) for k, v in self.options.items()]
 
-        return "\n".join(conf).format(**vars(self))
+        return "\n".join(conf).format(**vars(self)) + "\n"
 
     def __repr__(self):
         return "Hostapd(interface={interface!r}, driver={driver!r}, name={name!r}, ssid={ssid!r})"\
@@ -270,7 +270,7 @@ class Dnsmasq(object):
                     continue
 
                 # split or "key=value" pairs
-                split_line = map(str.strip, line.split("=", 1))
+                split_line = list(map(str.strip, line.split("=", 1)))
                 if len(split_line) > 1:
                     # this is an actual "key=value" pair
                     k, v = split_line
@@ -406,7 +406,7 @@ class Dnsmasq(object):
                 else:
                     conf.append(k)
 
-        return "\n".join(conf).format(**vars(self))
+        return "\n".join(conf).format(**vars(self)) + "\n"
 
     def __repr__(self):
         return "Dnsmasq(interface={interface}, name={name}, start={start}, end={end})".format(**vars(self))

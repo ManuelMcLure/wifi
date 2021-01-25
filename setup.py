@@ -25,7 +25,8 @@ except:
 version = '1.0.1'
 
 EXTRAS = [
-    ('/etc/bash_completion.d/', [('extras/wifi-completion.bash', 'wifi-completion', 0644)])
+    ('/etc/bash_completion.d/', [('extras/wifi-completion.bash',
+    'wifi-completion', 0o644)])
 ]
 
 
