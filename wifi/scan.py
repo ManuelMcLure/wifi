@@ -31,7 +31,7 @@ class Cell(object):
             raise InterfaceError(e.output.strip())
         else:
             iwlist_scan = iwlist_scan.decode('utf-8')
-        cells = map(Cell.from_string, cells_re.split(iwlist_scan)[1:])
+        cells = list(map(Cell.from_string, cells_re.split(iwlist_scan)[1:]))
 
         return cells
 
@@ -84,7 +84,7 @@ normalize_value = {
 
 
 def split_on_colon(string):
-    key, _, value = map(lambda s: s.strip(), string.partition(':'))
+    key, _, value = list(map(lambda s: s.strip(), string.partition(':')))
 
     return key, value
 
@@ -104,7 +104,7 @@ def normalize(cell_block):
                 if match_result is not None:
                     cell.quality, signal = match_result.groups()
                     if re_name == 'relative':
-                        actual, total = map(int, signal.split('/'))
+                        actual, total = list(map(int, signal.split('/')))
                         cell.signal = db2dbm(int((actual / total) * 100))
                     elif re_name == 'absolute':
                         cell.quality = cell.quality + '/100'
