@@ -182,7 +182,10 @@ class Scheme(object):
         Connects to the network as configured in this scheme.
         """
 
-        self.deactivate()
+        try:
+            self.deactivate()
+        except subprocess.CalledProcessError:
+            pass
         try:
             ifup_output = subprocess.check_output(['/sbin/ifup'] + self.as_args(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
