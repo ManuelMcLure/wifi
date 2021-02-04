@@ -1,6 +1,8 @@
 import re
 import itertools
 import logging
+from os import listdir, remove
+from os.path import join, isfile, exists
 
 import wifi.subprocess_compat as subprocess
 from pbkdf2 import PBKDF2
@@ -65,10 +67,11 @@ class Scheme(object):
     file.
     """
 
-    interfaces = '/etc/network/interfaces'
+    interfaces = join('/etc', 'network', 'interfaces')
+    interfaces_d = join('/etc', 'network', 'interfaces.d')
 
     @classmethod
-    def for_file(cls, interfaces):
+    def for_file(cls, interfaces, interfaces_d):
         """
         A class factory for providing a nice way to specify the interfaces file
         that you want to use.  Use this instead of directly overwriting the
@@ -76,6 +79,7 @@ class Scheme(object):
         """
         return type(cls)(cls.__name__, (cls,), {
             'interfaces': interfaces,
+            'interfaces_d': interfaces_d,
         })
 
     def __init__(self, interface, name, type="dhcp", options=None):
@@ -109,8 +113,18 @@ class Scheme(object):
         Returns an generator of saved schemes.
         """
         ensure_file_exists(cls.interfaces)
+        schemes = []
         with open(cls.interfaces, 'r') as f:
-            return extract_schemes(f.read(), scheme_class=cls)
+            schemes.extend(extract_schemes(f.read(), scheme_class=cls))
+        for iface_file in [f for f in listdir(cls.interfaces_d) 
+            if isfile(join(cls.interfaces_d, f))]:
+                with open(join(cls.interfaces_d, iface_file), 'r') as f:
+                    schemes.extend(extract_schemes(f.read(), scheme_class=cls))
+
+        print(schemes)
+        for scheme in schemes:
+            yield scheme
+
 
     @classmethod
     def where(cls, fn):
@@ -145,13 +159,15 @@ class Scheme(object):
                 raise RuntimeError("Scheme for interface %s named %s already exists and overwrite is forbidden" % (self.interface, self.name))
             existing_scheme.delete()
 
-        with open(self.interfaces, 'a') as f:
-            f.write('\n')
+        iface_file = join(self.interfaces_d,
+            "%s-%s" % (self.interface, self.name))
+        with open(iface_file, 'w') as f:
             f.write(str(self))
 
     def delete(self):
         """
         Deletes the configuration from the :attr:`interfaces` file.
+        Also deletes a corresponding file in /etc/network/interfaces.d
         """
         iface = "iface %s-%s inet %s" % (self.interface, self.name, self.type)
         content = ''
@@ -166,6 +182,11 @@ class Scheme(object):
                     content += line
         with open(self.interfaces, 'w') as f:
             f.write(content)
+        iface_file = join(self.interfaces_d,
+            "%s-%s" % (self.interface, self.name))
+        if exists(iface_file):
+            remove(iface_file)
+
 
     @property
     def iface(self):
@@ -185,6 +206,7 @@ class Scheme(object):
         try:
             self.deactivate()
         except subprocess.CalledProcessError:
+            # TODO: check error message to see whether to ignore
             pass
         try:
             ifup_output = subprocess.check_output(['/sbin/ifup'] + self.as_args(), stderr=subprocess.STDOUT)
@@ -228,6 +250,7 @@ scheme_re = re.compile(r'iface\s+(?P<interface>wlan\d?)(?:-(?P<name>\w+))?\s+ine
 
 
 def extract_schemes(interfaces, scheme_class=Scheme):
+    schemes = []
     lines = interfaces.splitlines()
     while lines:
         line = lines.pop(0)
@@ -249,7 +272,7 @@ def extract_schemes(interfaces, scheme_class=Scheme):
                     options[key] = []
                 options[key].append(value)
 
-            scheme = scheme_class(interface, scheme, type=type, options=options)
+            schemes.append(scheme_class(interface, scheme, type=type,
+                options=options))
 
-            yield scheme
-
+    return schemes
