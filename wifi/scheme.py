@@ -213,7 +213,8 @@ class Scheme(object):
         except subprocess.CalledProcessError as e:
             self.logger.exception("Error while trying to connect to %s" % self.iface)
             self.logger.error("Output: %s" % e.output)
-            raise InterfaceError("Failed to connect to %r: %s" % (self, e.message))
+            raise InterfaceError("Failed to connect to %r: %s" % (self,
+                e.stderr))
         ifup_output = ifup_output.decode('utf-8')
 
         return self.parse_ifup_output(ifup_output)
