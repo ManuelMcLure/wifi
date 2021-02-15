@@ -4,11 +4,11 @@ import netaddr
 import os
 import logging
 import re
+import subprocess
 
 from wifi import Scheme
 from wifi.exceptions import BindError
 from wifi.utils import mac_addr_pattern
-import wifi.subprocess_compat as subprocess
 
 
 bound_ap_re = re.compile(r"^Using interface (?P<interface>\w+) with hwaddr %s and ssid '(?P<ssid>[^']+)'" % mac_addr_pattern, flags=re.MULTILINE)

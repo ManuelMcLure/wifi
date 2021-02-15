@@ -3,7 +3,7 @@ from __future__ import division
 import re
 import textwrap
 
-import wifi.subprocess_compat as subprocess
+import subprocess
 from wifi.utils import db2dbm
 from wifi.exceptions import InterfaceError
 

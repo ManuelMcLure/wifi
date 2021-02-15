@@ -4,7 +4,7 @@ import logging
 from os import listdir, remove
 from os.path import join, isfile, exists
 
-import wifi.subprocess_compat as subprocess
+import subprocess
 from pbkdf2 import PBKDF2
 from wifi.utils import ensure_file_exists
 from wifi.exceptions import *
