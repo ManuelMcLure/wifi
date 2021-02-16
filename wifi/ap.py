@@ -11,7 +11,11 @@ from wifi.exceptions import BindError
 from wifi.utils import mac_addr_pattern
 
 
-bound_ap_re = re.compile(r"^Using interface (?P<interface>\w+) with hwaddr %s and ssid '(?P<ssid>[^']+)'" % mac_addr_pattern, flags=re.MULTILINE)
+bound_ap_re = re.compile(
+    r"^Using interface (?P<interface>\w+) with hwaddr %s and ssid '(?P<ssid>[^']+)'"
+    % mac_addr_pattern,
+    flags=re.MULTILINE,
+)
 
 
 class Hostapd(object):
@@ -35,12 +39,18 @@ class Hostapd(object):
 
     @classmethod
     def for_hostapd_and_confd(cls, hostapd, confd):
-        return type(cls)(cls.__name__, (cls,), {
-            'hostapd': hostapd if hostapd is not None else cls.hostapd,
-            'confd': confd if confd is not None else cls.confd,
-        })
+        return type(cls)(
+            cls.__name__,
+            (cls,),
+            {
+                "hostapd": hostapd if hostapd is not None else cls.hostapd,
+                "confd": confd if confd is not None else cls.confd,
+            },
+        )
 
-    def __init__(self, interface, name, ssid, channel, driver=None, psk=None, options=None):
+    def __init__(
+        self, interface, name, ssid, channel, driver=None, psk=None, options=None
+    ):
         self.interface = interface
         self.driver = driver if driver is not None else "nl80211"
         self.name = name
@@ -56,7 +66,7 @@ class Hostapd(object):
             "interface={interface}",
             "driver={driver}",
             "ssid={ssid}",
-            "channel={channel}"
+            "channel={channel}",
         ]
 
         if self.psk is not None:
@@ -66,7 +76,7 @@ class Hostapd(object):
                 "wpa_passphrase={psk}",
                 "wpa_key_mgmt=WPA-PSK",
                 "wpa_pairwise=TKIP CCMP",
-                "rsn_pairwise=CCMP"
+                "rsn_pairwise=CCMP",
             ]
 
         if self.options:
@@ -76,14 +86,18 @@ class Hostapd(object):
         return "\n".join(conf).format(**vars(self)) + "\n"
 
     def __repr__(self):
-        return "Hostapd(interface={interface!r}, driver={driver!r}, name={name!r}, ssid={ssid!r})"\
-            .format(**vars(self))
+        return "Hostapd(interface={interface!r}, driver={driver!r}, name={name!r}, ssid={ssid!r})".format(
+            **vars(self)
+        )
 
     def save(self, allow_overwrite=False):
         existing_hostapd = self.__class__.find(self.interface, self.name)
         if existing_hostapd:
             if not allow_overwrite:
-                raise RuntimeError("Config for interface %s named %s does already exists and overwrite is not allowed" % (self.interface, self.name))
+                raise RuntimeError(
+                    "Config for interface %s named %s does already exists and overwrite is not allowed"
+                    % (self.interface, self.name)
+                )
             existing_hostapd.delete()
 
         with open(self.configfile, "w") as f:
@@ -100,11 +114,16 @@ class Hostapd(object):
 
     def activate(self):
         try:
-            output = subprocess.check_output([self.__class__.hostapd, "-dd", "-B", self.configfile], stderr=subprocess.STDOUT)
+            output = subprocess.check_output(
+                [self.__class__.hostapd, "-dd", "-B", self.configfile],
+                stderr=subprocess.STDOUT,
+            )
             self._logger.info("Started hostapd: {output}".format(output=output))
             return True
         except subprocess.CalledProcessError as e:
-            self._logger.warn("Error while starting hostapd: {output}".format(output=e.output))
+            self._logger.warn(
+                "Error while starting hostapd: {output}".format(output=e.output)
+            )
             raise e
 
     def deactivate(self):
@@ -147,7 +166,9 @@ class Hostapd(object):
                     ap = cls.from_hostapd_conf(filename)
                     result.append(ap)
                 except:
-                    cls.logger.exception("Could not retrieve hostapd from file %s:" % filename)
+                    cls.logger.exception(
+                        "Could not retrieve hostapd from file %s:" % filename
+                    )
         return result
 
     @classmethod
@@ -166,7 +187,7 @@ class Hostapd(object):
         if not os.path.exists(configfile):
             raise IOError("Configfile not found: %s" % configfile)
 
-        name = os.path.basename(configfile)[:-len(".conf")]
+        name = os.path.basename(configfile)[: -len(".conf")]
 
         conf_options = dict()
         with open(configfile, "r") as f:
@@ -178,15 +199,41 @@ class Hostapd(object):
             if not key in conf_options or conf_options[key] is None:
                 raise RuntimeError("Invalid config, %s is missing or none" % key)
 
-        options = dict((k, conf_options[k]) for k in conf_options if not k in ["interface", "driver", "ssid", "channel", "wpa", "wpa_passphrase", "wpa_key_mgmt", "wpa_pairwise", "rsn_pairwise"])
-        psk = conf_options["wpa_passphrase"] if "wpa_passphrase" in conf_options else None
+        options = dict(
+            (k, conf_options[k])
+            for k in conf_options
+            if not k
+            in [
+                "interface",
+                "driver",
+                "ssid",
+                "channel",
+                "wpa",
+                "wpa_passphrase",
+                "wpa_key_mgmt",
+                "wpa_pairwise",
+                "rsn_pairwise",
+            ]
+        )
+        psk = (
+            conf_options["wpa_passphrase"] if "wpa_passphrase" in conf_options else None
+        )
         try:
             channel = int(conf_options["channel"])
         except ValueError as e:
-            raise RuntimeError("Invalid config, %r is an invalid channel" % conf_options["channel"], e)
+            raise RuntimeError(
+                "Invalid config, %r is an invalid channel" % conf_options["channel"], e
+            )
 
-        return cls(conf_options["interface"], name, conf_options["ssid"], channel, driver=conf_options["driver"], psk=psk, options=options)
-
+        return cls(
+            conf_options["interface"],
+            name,
+            conf_options["ssid"],
+            channel,
+            driver=conf_options["driver"],
+            psk=psk,
+            options=options,
+        )
 
     def parse_hostapd_output(self, output):
         print(output)
@@ -194,7 +241,10 @@ class Hostapd(object):
         if matches:
             return True
         else:
-            raise BindError("Could not bind hostapd %r to interface %s:\n%s" % (self, self.interface, output))
+            raise BindError(
+                "Could not bind hostapd %r to interface %s:\n%s"
+                % (self, self.interface, output)
+            )
 
 
 class Dnsmasq(object):
@@ -218,10 +268,14 @@ class Dnsmasq(object):
 
     @classmethod
     def for_dnsmasq_and_confd(cls, dnsmasq, confd):
-        return type(cls)(cls.__name__, (cls,), {
-            'dnsmasq': dnsmasq if dnsmasq is not None else cls.dnsmasq,
-            'confd': confd if confd is not None else cls.confd,
-        })
+        return type(cls)(
+            cls.__name__,
+            (cls,),
+            {
+                "dnsmasq": dnsmasq if dnsmasq is not None else cls.dnsmasq,
+                "confd": confd if confd is not None else cls.confd,
+            },
+        )
 
     @classmethod
     def all(cls):
@@ -233,7 +287,9 @@ class Dnsmasq(object):
                     dnsmasq = cls.from_dnsmasq_conf(os.path.join(cls.confd, conf))
                     result.append(dnsmasq)
                 except:
-                    cls.logger.exception("Could not retrieve dnsmasq config from file %s" % filename)
+                    cls.logger.exception(
+                        "Could not retrieve dnsmasq config from file %s" % filename
+                    )
         return result
 
     @classmethod
@@ -259,7 +315,7 @@ class Dnsmasq(object):
         if not os.path.exists(configfile):
             raise IOError("Configfile not found: %s" % configfile)
 
-        name = os.path.basename(configfile)[:-len(".conf")]
+        name = os.path.basename(configfile)[: -len(".conf")]
 
         conf = dict()
         additional_options = dict()
@@ -309,7 +365,9 @@ class Dnsmasq(object):
                         conf["lease_time"] = int(lease_time) * factor
                         continue
                     except ValueError:
-                        cls.logger.exception("Could not convert lease time value %s" % lease_time)
+                        cls.logger.exception(
+                            "Could not convert lease time value %s" % lease_time
+                        )
 
                 elif k == "domain":
                     conf["domain"] = v
@@ -320,7 +378,9 @@ class Dnsmasq(object):
                     # is provided in the format "dhcp-option=option:router,<gateway>" or
                     # "dhcp-option=3,<gateway>"
                     opts = v.split(",")
-                    if len(opts) == 2 and (opts[0] == "option:router" or opts[0] == "3"):
+                    if len(opts) == 2 and (
+                        opts[0] == "option:router" or opts[0] == "3"
+                    ):
                         conf["gateway"] = opts[1]
                         continue
 
@@ -348,11 +408,28 @@ class Dnsmasq(object):
             if not key in conf:
                 conf[key] = None
 
-        return Dnsmasq(conf["interface"], name, conf["start"], conf["end"], lease_time=conf["lease_time"],
-                       gateway=conf["gateway"], domain=conf["domain"], options=additional_options)
+        return Dnsmasq(
+            conf["interface"],
+            name,
+            conf["start"],
+            conf["end"],
+            lease_time=conf["lease_time"],
+            gateway=conf["gateway"],
+            domain=conf["domain"],
+            options=additional_options,
+        )
 
-
-    def __init__(self, interface, name, start, end, lease_time=None, gateway=None, domain=None, options=None):
+    def __init__(
+        self,
+        interface,
+        name,
+        start,
+        end,
+        lease_time=None,
+        gateway=None,
+        domain=None,
+        options=None,
+    ):
         """
         :param interface: the interface on which to listen
         :param name: the name of the configuration
@@ -380,22 +457,16 @@ class Dnsmasq(object):
         conf = [
             "interface={interface}",
             "bind-interfaces",
-            "dhcp-range={start},{end},{lease_time}"
+            "dhcp-range={start},{end},{lease_time}",
         ]
 
         # if a local domain is configured, add the corresponding configuration lines
         if self.domain:
-            conf += [
-                "local=/{domain}/",
-                "domain={domain}",
-                "expand-hosts"
-            ]
+            conf += ["local=/{domain}/", "domain={domain}", "expand-hosts"]
 
         # if a gateway is configured, add the corresponding configuration line
         if self.gateway:
-            conf += [
-                "dhcp-option=option:router,{gateway}"
-            ]
+            conf += ["dhcp-option=option:router,{gateway}"]
 
         # add any additional dnsmasq options that were provided
         if self.options:
@@ -409,7 +480,9 @@ class Dnsmasq(object):
         return "\n".join(conf).format(**vars(self)) + "\n"
 
     def __repr__(self):
-        return "Dnsmasq(interface={interface}, name={name}, start={start}, end={end})".format(**vars(self))
+        return "Dnsmasq(interface={interface}, name={name}, start={start}, end={end})".format(
+            **vars(self)
+        )
 
     def save(self, allow_overwrite=False):
         """
@@ -422,7 +495,10 @@ class Dnsmasq(object):
         existing_dnsmasq = self.__class__.find(self.interface, self.name)
         if existing_dnsmasq:
             if not allow_overwrite:
-                raise RuntimeError("Config for interface %s named %s does already exists and overwrite is not allowed" % (self.interface, self.name))
+                raise RuntimeError(
+                    "Config for interface %s named %s does already exists and overwrite is not allowed"
+                    % (self.interface, self.name)
+                )
             existing_dnsmasq.delete()
 
         with open(self.configfile, "w") as f:
@@ -442,10 +518,18 @@ class Dnsmasq(object):
         """ Activates this config. """
 
         try:
-            output = subprocess.check_output([self.__class__.dnsmasq, "--conf-file={file}".format(file=self.configfile)], stderr=subprocess.STDOUT)
+            output = subprocess.check_output(
+                [
+                    self.__class__.dnsmasq,
+                    "--conf-file={file}".format(file=self.configfile),
+                ],
+                stderr=subprocess.STDOUT,
+            )
             self._logger.info("Started dnsmasq: {output}".format(output=output))
         except subprocess.CalledProcessError as e:
-            self._logger.warn("Error while starting dnsmasq: {output}".format(output=e.output))
+            self._logger.warn(
+                "Error while starting dnsmasq: {output}".format(output=e.output)
+            )
             raise e
 
     def deactivate(self):
@@ -501,17 +585,33 @@ class AccessPoint(object):
 
     @classmethod
     def for_classes(cls, hostapd_cls=None, dnsmasq_cls=None, scheme_cls=None):
-        return type(cls)(cls.__name__, (cls,), {
-            'hostapd_cls': hostapd_cls if hostapd_cls is not None else cls.hostapd_cls,
-            'dnsmasq_cls': dnsmasq_cls if dnsmasq_cls is not None else cls.dnsmasq_cls,
-            'scheme_cls': scheme_cls if scheme_cls is not None else cls.scheme_cls
-        })
+        return type(cls)(
+            cls.__name__,
+            (cls,),
+            {
+                "hostapd_cls": hostapd_cls
+                if hostapd_cls is not None
+                else cls.hostapd_cls,
+                "dnsmasq_cls": dnsmasq_cls
+                if dnsmasq_cls is not None
+                else cls.dnsmasq_cls,
+                "scheme_cls": scheme_cls if scheme_cls is not None else cls.scheme_cls,
+            },
+        )
 
     @classmethod
     def all(cls):
-        hostapds = {(hostapd.interface, hostapd.name): hostapd for hostapd in cls.hostapd_cls.all()}
-        dnsmasqs = {(dnsmasq.interface, dnsmasq.name): dnsmasq for dnsmasq in cls.dnsmasq_cls.all()}
-        schemes = {(scheme.interface, scheme.name): scheme for scheme in cls.scheme_cls.all()}
+        hostapds = {
+            (hostapd.interface, hostapd.name): hostapd
+            for hostapd in cls.hostapd_cls.all()
+        }
+        dnsmasqs = {
+            (dnsmasq.interface, dnsmasq.name): dnsmasq
+            for dnsmasq in cls.dnsmasq_cls.all()
+        }
+        schemes = {
+            (scheme.interface, scheme.name): scheme for scheme in cls.scheme_cls.all()
+        }
 
         result = []
         for key in hostapds:
@@ -531,8 +631,21 @@ class AccessPoint(object):
             return None
 
     @classmethod
-    def for_arguments(cls, interface, name, ssid, channel, ip, network, start, end, forwarding_to=None,
-                      hostap_options=None, dnsmasq_options=None, scheme_options=None):
+    def for_arguments(
+        cls,
+        interface,
+        name,
+        ssid,
+        channel,
+        ip,
+        network,
+        start,
+        end,
+        forwarding_to=None,
+        hostap_options=None,
+        dnsmasq_options=None,
+        scheme_options=None,
+    ):
         """
         Creates a new access point configuration for the given arguments.
 
@@ -581,7 +694,9 @@ class AccessPoint(object):
             psk = None
 
         # create hostapd config
-        hostapd = cls.hostapd_cls(interface, name, ssid, channel, driver, psk=psk, options=hostap_options)
+        hostapd = cls.hostapd_cls(
+            interface, name, ssid, channel, driver, psk=psk, options=hostap_options
+        )
 
         #  prepare dnsmasq options
         if dnsmasq_options is None:
@@ -606,7 +721,16 @@ class AccessPoint(object):
             gateway = None
 
         # create dnsmasq
-        dnsmasq = cls.dnsmasq_cls(interface, name, start, end, lease_time=lease_time, gateway=gateway, domain=domain, options=dnsmasq_options)
+        dnsmasq = cls.dnsmasq_cls(
+            interface,
+            name,
+            start,
+            end,
+            lease_time=lease_time,
+            gateway=gateway,
+            domain=domain,
+            options=dnsmasq_options,
+        )
 
         # prepare scheme options
         if scheme_options == None:
@@ -614,11 +738,13 @@ class AccessPoint(object):
 
         # create a scheme with static configuration, given ip and netmask -- those parameters will be ruthlessly
         # overridden if they were already present in the supplied scheme_options
-        scheme_options.update(dict(
-            address=[ip],
-            netmask=[str(network_address.netmask)],
-            broadcast=[str(network_address.broadcast)]
-        ))
+        scheme_options.update(
+            dict(
+                address=[ip],
+                netmask=[str(network_address.netmask)],
+                broadcast=[str(network_address.broadcast)],
+            )
+        )
 
         if forwarding_to is not None:
             # if forwarding is enabled, also add some rules and stuff
@@ -630,11 +756,15 @@ class AccessPoint(object):
                 "/sbin/iptables -X",
                 "/sbin/iptables -t nat -F",
                 # setup forwarding rules
-                "/sbin/iptables -A FORWARD -o {forward} -i {interface} -s {network} -m conntrack --ctstate NEW -j ACCEPT".format(forward=forwarding_to, network=str(network_address), interface=interface),
+                "/sbin/iptables -A FORWARD -o {forward} -i {interface} -s {network} -m conntrack --ctstate NEW -j ACCEPT".format(
+                    forward=forwarding_to,
+                    network=str(network_address),
+                    interface=interface,
+                ),
                 "/sbin/iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
                 "/sbin/iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE",
                 # enable forwarding
-                "/sbin/sysctl -w net.ipv4.ip_forward=1"
+                "/sbin/sysctl -w net.ipv4.ip_forward=1",
             ]
 
             if not "pre-down" in scheme_options:
@@ -713,5 +843,6 @@ class AccessPoint(object):
         return self.hostapd.is_running() or self.dnsmasq.is_running()
 
     def __repr__(self):
-        return "AccessPoint(hostapd={hostapd!r}, dnsmasq={dnsmasq!r}, scheme={scheme!r})".format(**vars(self))
-
+        return "AccessPoint(hostapd={hostapd!r}, dnsmasq={dnsmasq!r}, scheme={scheme!r})".format(
+            **vars(self)
+        )

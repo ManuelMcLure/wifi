@@ -4,7 +4,7 @@ import os
 import sys
 
 
-if sys.version < '3':
+if sys.version < "3":
     str = unicode
 
 
@@ -23,18 +23,20 @@ def match(needle, haystack):
             j += 1
         if j >= len(haystack):
             return 0
-        score += 1 / (last_match + 1.)
+        score += 1 / (last_match + 1.0)
         last_match = j
         j += 1
     return score
 
 
-def print_table(matrix, sep='  ', file=sys.stdout, *args, **kwargs):
+def print_table(matrix, sep="  ", file=sys.stdout, *args, **kwargs):
     """
     Prints a left-aligned table of elements.
     """
     lengths = [max(map(len, map(str, column))) for column in zip(*matrix)]
-    format = sep.join('{{{0}:<{1}}}'.format(i, length) for i, length in enumerate(lengths))
+    format = sep.join(
+        "{{{0}:<{1}}}".format(i, length) for i, length in enumerate(lengths)
+    )
 
     for row in matrix:
         print(format.format(*row).strip(), file=file, *args, **kwargs)
@@ -54,8 +56,8 @@ def ensure_file_exists(filename):
     http://stackoverflow.com/a/12654798/1013960
     """
     if not os.path.exists(filename):
-        open(filename, 'a').close()
+        open(filename, "a").close()
+
 
 cidr_v4_pattern = r"(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(\d|[1-2]\d|3[0-2]))"
 mac_addr_pattern = r"[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}"
-

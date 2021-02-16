@@ -1,6 +1,7 @@
 class WifiError(Exception):
     pass
 
+
 class ConnectionError(WifiError):
     pass
 

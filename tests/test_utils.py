@@ -11,10 +11,7 @@ except ImportError:  # Python < 3
 from wifi.utils import print_table, match, db2dbm
 
 
-print_table_in = [
-    ['1', '123456789', 'hello'],
-    ['2344566', 'góodbŷe', 'foo']
-]
+print_table_in = [["1", "123456789", "hello"], ["2344566", "góodbŷe", "foo"]]
 print_table_out = """
 1        123456789  hello
 2344566  góodbŷe    foo
@@ -29,16 +26,16 @@ class PrintTableTest(TestCase):
 
     def test_no_failure_with_non_strs(self):
         stdout = StringIO()
-        print_table([[1], ['2']], file=stdout)
-        self.assertEqual(stdout.getvalue(), '1\n2\n')
+        print_table([[1], ["2"]], file=stdout)
+        self.assertEqual(stdout.getvalue(), "1\n2\n")
 
 
 class FuzzyMatchTest(TestCase):
     def test_match(self):
-        assert match('f', 'foo') > 0
-        assert match('x', 'foo') == 0
-        assert match('hl', 'hello') > 0
-        assert match('hel', 'hello') > match('ho', 'hello')
+        assert match("f", "foo") > 0
+        assert match("x", "foo") == 0
+        assert match("hl", "hello") > 0
+        assert match("hel", "hello") > match("ho", "hello")
 
 
 class db2dbMTest(TestCase):
